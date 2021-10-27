@@ -50,6 +50,16 @@ public class HydrogenImmutableReferenceHashMap<K, V> extends ImmutableMap<K, V> 
     }
 
     @Override
+    ImmutableCollection<V> createValues() {
+      return new ImmutableMapValues<>(this);
+    }
+
+    @Override
+    ImmutableSet<K> createKeySet() {
+      return new ImmutableMapKeySet<>(this);
+    }
+
+    @Override
     public V get(final Object k) {
         int pos = HashCommon.mix(System.identityHashCode(k)) & this.mask;
         K curr = this.key[pos];

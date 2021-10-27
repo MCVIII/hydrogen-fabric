@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import me.jellysquid.mods.hydrogen.common.dedup.IdentifierCaches;
 import net.fabricmc.fabric.api.resource.ResourceReloadListenerKeys;
 import net.fabricmc.fabric.api.resource.SimpleResourceReloadListener;
+import net.minecraft.resource.ResourceReloader;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
@@ -13,6 +14,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 public class ModelCacheReloadListener implements SimpleResourceReloadListener<Void> {
+    @Override
+    public CompletableFuture<Void> reload(ResourceReloader.Synchronizer helper, ResourceManager manager, Profiler loadProfiler, Profiler applyProfiler, Executor loadExecutor, Executor applyExecutor) {
+        return load(manager, loadProfiler, loadExecutor).thenCompose(helper::whenPrepared).thenCompose(
+            (o) -> apply(o, manager, applyProfiler, applyExecutor)
+        );
+    }
+
     @Override
     public CompletableFuture<Void> load(ResourceManager manager, Profiler profiler, Executor executor) {
         ModelCaches.cleanCaches();

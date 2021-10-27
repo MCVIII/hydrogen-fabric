@@ -4,12 +4,10 @@ import net.minecraft.block.Block;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.structure.StructureManager;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.ChunkSerializer;
 import net.minecraft.world.TickScheduler;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ProtoChunk;
 import net.minecraft.world.chunk.UpgradeData;
@@ -35,13 +33,13 @@ public abstract class MixinChunkSerializer {
     }
 
     @Inject(method = "deserialize", at = @At("HEAD"))
-    private static void captureTag(ServerWorld world, StructureManager structureManager, PointOfInterestStorage poiStorage, ChunkPos pos, NbtCompound tag, CallbackInfoReturnable<ProtoChunk> cir) {
+    private static void captureTag(ServerWorld world, PointOfInterestStorage poiStorage, ChunkPos pos, NbtCompound tag, CallbackInfoReturnable<ProtoChunk> cir) {
         // We can't access the method parameters in the later redirect, so capture them for this thread
         CAPTURED_TAGS.set(tag);
     }
 
     @Redirect(method = "deserialize", at = @At(value = "NEW", target = "net/minecraft/world/chunk/WorldChunk"))
-    private static WorldChunk create(World world, ChunkPos pos, BiomeArray biomes, UpgradeData upgradeData,
+    private static WorldChunk create(World world, ChunkPos pos, UpgradeData upgradeData,
                                      TickScheduler<Block> blockTickScheduler, TickScheduler<Fluid> fluidTickScheduler,
                                      long inhabitedTime, @Nullable ChunkSection[] sections,
                                      @Nullable Consumer<WorldChunk> loadToWorldConsumer) {
@@ -61,13 +59,13 @@ public abstract class MixinChunkSerializer {
         strippedTag.put("Entities", level.getList("Entities", 10));
         strippedTag.put("TileEntities", level.getList("TileEntities", 10));
 
-        return new WorldChunk(world, pos, biomes, upgradeData, blockTickScheduler, fluidTickScheduler, inhabitedTime, sections, (chunk) -> {
+        return new WorldChunk(world, pos, upgradeData, blockTickScheduler, fluidTickScheduler, inhabitedTime, sections, (chunk) -> {
             loadEntities((ServerWorld) world, strippedTag, chunk);
         });
     }
 
     @Inject(method = "deserialize", at = @At("RETURN"))
-    private static void releaseTag(ServerWorld world, StructureManager structureManager, PointOfInterestStorage poiStorage, ChunkPos pos, NbtCompound tag, CallbackInfoReturnable<ProtoChunk> cir) {
+    private static void releaseTag(ServerWorld world, PointOfInterestStorage poiStorage, ChunkPos pos, NbtCompound tag, CallbackInfoReturnable<ProtoChunk> cir) {
         // Avoid leaking tags in memory
         CAPTURED_TAGS.remove();
     }
