@@ -6,7 +6,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.ChunkSerializer;
-import net.minecraft.world.TickScheduler;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ProtoChunk;
@@ -20,6 +19,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import net.minecraft.class_6752; // net/minecraft/world/chunk/BlendingData
+import net.minecraft.class_6755; // net/minecraft/world/tick/WorldTickScheduler
 
 import java.util.function.Consumer;
 
@@ -40,9 +42,9 @@ public abstract class MixinChunkSerializer {
 
     @Redirect(method = "deserialize", at = @At(value = "NEW", target = "net/minecraft/world/chunk/WorldChunk"))
     private static WorldChunk create(World world, ChunkPos pos, UpgradeData upgradeData,
-                                     TickScheduler<Block> blockTickScheduler, TickScheduler<Fluid> fluidTickScheduler,
+                                     class_6755<Block> blockTickScheduler, class_6755<Fluid> fluidTickScheduler,
                                      long inhabitedTime, @Nullable ChunkSection[] sections,
-                                     @Nullable Consumer<WorldChunk> loadToWorldConsumer) {
+                                     @Nullable Consumer<WorldChunk> loadToWorldConsumer, class_6752 blendingData) {
         NbtCompound rootTag = CAPTURED_TAGS.get();
 
         if (rootTag == null) {
@@ -61,7 +63,7 @@ public abstract class MixinChunkSerializer {
 
         return new WorldChunk(world, pos, upgradeData, blockTickScheduler, fluidTickScheduler, inhabitedTime, sections, (chunk) -> {
             loadEntities((ServerWorld) world, strippedTag, chunk);
-        });
+        }, blendingData);
     }
 
     @Inject(method = "deserialize", at = @At("RETURN"))
